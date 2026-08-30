@@ -1,0 +1,11 @@
+streamlit
+langchain-core
+langgraph
+langchain-huggingface
+python-dotenv
+huggingface-hub
+torch
+torchvision
+transformers
+accelerate
+bitsandbytes
