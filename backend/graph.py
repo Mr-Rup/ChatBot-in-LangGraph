@@ -3,7 +3,8 @@ try:
    from typing import TypedDict, Annotated
    from langchain_core.messages import BaseMessage
    from langgraph.graph.message import add_messages
-   from langgraph.checkpoint.memory import InMemorySaver
+   from langgraph.checkpoint.sqlite import SqliteSaver
+   import sqlite3
 except Exception as e:
    raise ImportError(f"Failed to import necessary modules in graph.py: {e}")
 
@@ -15,8 +16,12 @@ class ChatState(TypedDict):
    messages: Annotated[list[BaseMessage], add_messages]
 
 def create_chatbot(model):
-   # create checkpointer for memory
-   check_pointer = InMemorySaver()
+   # create sqlite connection
+   import sqlite3
+   connect = sqlite3.connect('chatbot.db', check_same_thread=False, timeout=10.0)
+   connect.execute('PRAGMA journal_mode=WAL;')
+   # create checkpointer for memory using sqlite
+   check_pointer = SqliteSaver(conn=connect)
 
    # Create chat node function
    def chat_node(state: ChatState):

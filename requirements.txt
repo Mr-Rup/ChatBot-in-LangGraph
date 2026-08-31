@@ -2,8 +2,10 @@
 
 streamlit
 langchain-core
+langgraph-checkpoint-sqlite
 langgraph
 langchain-huggingface
+
 python-dotenv
 huggingface-hub
 transformers

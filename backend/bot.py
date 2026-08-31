@@ -2,6 +2,7 @@ try:
    from typing import Literal
    from backend.model import create_hf_model
    from backend.graph import create_chatbot
+   from backend.db import retrieve_all_threads
 except Exception as e:
    raise ImportError(f"Failed to import necessary modules in bot.py: {e}")
 
