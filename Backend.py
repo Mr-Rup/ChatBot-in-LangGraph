@@ -14,23 +14,35 @@ load_dotenv()
 # fix local models catch directory
 os.environ['HF_HOME'] = 'S:/ollama_models'
 
-# Create higginface(hf) model instance
-def create_hf_model(type: Literal['api','local'], model_name: str, model_task: str, model_temparature: float, model_max_new_tokens: int):
+# -------------------------------------------------------------------
+# Hugging Face Model Creation
+# -------------------------------------------------------------------
+
+def create_hf_model(type: Literal['api','local'], model_name: str, model_task: str, model_temperature: float, model_max_new_tokens: int):
    try:
       from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint, HuggingFacePipeline
 
+      # hf api models
       if type == 'api':
          llm = HuggingFaceEndpoint(
             repo_id=model_name,
             task=model_task,
             pipeline_kwargs=dict(
-               temperature=model_temparature,
+               temperature=model_temperature,
                max_new_tokens=model_max_new_tokens,
             )
          )
+      # hf local models
       elif type == 'local':
-         model_kwargs = {"device_map": "auto", "dtype": "auto"}
          
+         # # Monkey patch TextIteratorStreamer to increase the hardcoded 60s timeout in langchain
+         # from transformers import TextIteratorStreamer
+         # original_init = TextIteratorStreamer.__init__
+         # def patched_init(self, tokenizer, skip_prompt=False, timeout=None, **kwargs):
+         #     original_init(self, tokenizer, skip_prompt=skip_prompt, timeout=600.0, **kwargs)
+         # TextIteratorStreamer.__init__ = patched_init
+         
+         model_kwargs = {"device_map": "auto", "dtype": "auto"}
          # Hardware Optimization: Attempt 4-bit quantization for low-spec PCs
          try:
             from transformers import BitsAndBytesConfig
@@ -44,16 +56,23 @@ def create_hf_model(type: Literal['api','local'], model_name: str, model_task: s
          except ImportError:
             pass # bitsandbytes not installed, fallback to standard precision
 
+         from transformers import GenerationConfig
+
+         generation_config = GenerationConfig.from_pretrained(model_name)
+
+         # Override only the parameters controlled by app
+         generation_config.max_new_tokens = model_max_new_tokens
+         generation_config.do_sample = True
+         generation_config.temperature = model_temperature
+
          llm = HuggingFacePipeline.from_model_id(
             model_id=model_name,
             task=model_task,
             model_kwargs=model_kwargs,
-            pipeline_kwargs=dict(
-               temperature=model_temparature,
-               max_new_tokens=model_max_new_tokens,
-               do_sample=True,
-               return_full_text=False # prevents repeating the prompt in the output
-            )
+            pipeline_kwargs={
+               "generation_config": generation_config,
+               "return_full_text": False,
+            },
          )
       else:
          raise ValueError("model type must be an api or local.")
@@ -65,8 +84,10 @@ def create_hf_model(type: Literal['api','local'], model_name: str, model_task: s
    except Exception as e:
       print(f"Error occured while calling creating model instance: {e}")
 
-
+# -------------------------------------------------------------------
 # create chatstate
+# -------------------------------------------------------------------
+
 class ChatState(TypedDict):
    messages: Annotated[list[BaseMessage], add_messages]
 
@@ -92,17 +113,20 @@ def create_chatbot(model):
    return chatbot
 
 class ChatBot:
-   def __init__(self, model_type: Literal['api','local'], model_name: str, model_task: str, model_temparature: float, model_max_new_tokens: int):
-      self.model = create_hf_model(model_type, model_name, model_task, model_temparature, model_max_new_tokens)
+   def __init__(self, model_type: Literal['api','local'], model_name: str, model_task: str, model_temperature: float, model_max_new_tokens: int):
+      self.model = create_hf_model(model_type, model_name, model_task, model_temperature, model_max_new_tokens)
 
       self.bot = create_chatbot(self.model)
 
+# -------------------------------------------------------------------
 # Default configuration for local Hugging Face model
+# -------------------------------------------------------------------
+
 DEFAULT_MODEL_CONFIG = {
    'model_type': 'local',
    'model_name': 'Qwen/Qwen2.5-3B-Instruct',  # Great performance, fits comfortably in 6GB VRAM
    'model_task': 'text-generation',
-   'model_temparature': 0.7,
+   'model_temperature': 0.7,
    'model_max_new_tokens': 512
 }
 
