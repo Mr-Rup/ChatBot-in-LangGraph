@@ -24,6 +24,6 @@ if not exist "%VENV_DIR%\Scripts\activate.bat" (
 
 echo.
 echo Starting the ChatBot Application...
-python -m streamlit run frontend_streaming.py
+python -m streamlit run app.py
 
 pause

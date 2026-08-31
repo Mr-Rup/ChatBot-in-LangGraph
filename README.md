@@ -20,5 +20,5 @@ A LangGraph based ChatBot with Streamlit frontend.
 3. Run the Streamlit application:
 
    ```bash
-   streamlit run frontend_streaming.py
+   streamlit run app.py
    ```
