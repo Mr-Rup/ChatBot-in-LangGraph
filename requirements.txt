@@ -1,21 +1,40 @@
 --extra-index-url https://download.pytorch.org/whl/cu126
 
+# ==========================================
+# Frontend / UI Framework
+# ==========================================
 streamlit
-langchain-core
-langgraph-checkpoint-sqlite
-langgraph
-langchain-huggingface
-langchain-community
-langsmith
 
-python-dotenv
-huggingface-hub
-transformers
-accelerate
-bitsandbytes
+# ==========================================
+# Core AI Logic & Graph Management
+# ==========================================
+langchain-core               # Core LangChain abstractions and messages
+langgraph                    # Framework for stateful conversational agents
+langgraph-checkpoint-sqlite  # Persistence for saving LangGraph memory to SQLite DB
+langsmith                    # Tracing and observability for AI agents
 
-torch
-torchvision
+# ==========================================
+# Hugging Face Integration & Modeling
+# ==========================================
+langchain-huggingface        # LangChain wrapper for HF models
+huggingface-hub              # Official hub client to download/manage models
+transformers                 # Required for loading local HF models
+accelerate                   # Optimizes running large models on limited VRAM
+bitsandbytes                 # Enables 4-bit quantization for low-spec PCs
 
-# Tool specific need
-ddgs # DuckDuckGoSearch
+# ==========================================
+# Hardware Acceleration & Deep Learning
+# ==========================================
+torch                        # PyTorch framework (CUDA 12.6 specified above)
+torchvision                  # Computer vision utilities (often required by Torch)
+
+# ==========================================
+# Tools & External APIs
+# ==========================================
+langchain-community          # Contains the DuckDuckGo search integration wrapper
+duckduckgo-search            # The actual pip package for DuckDuckGoSearch (replaces 'ddgs')
+
+# ==========================================
+# Utilities
+# ==========================================
+python-dotenv                # Loads environment variables (like API keys) from a .env file
