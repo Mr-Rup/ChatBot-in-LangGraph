@@ -17,8 +17,9 @@ except Exception as e:
 # Load secret keys if any
 load_dotenv()
 
-# Fix local models cache directory
-os.environ['HF_HOME'] = 'S:/ollama_models'
+# Fix local models cache directory if not already specified in environment
+if not os.environ.get('HF_HOME'):
+   os.environ['HF_HOME'] = 'S:/ollama_models'
 
 # ============================================================
 # Hugging Face Model Creation
