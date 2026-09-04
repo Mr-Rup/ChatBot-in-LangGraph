@@ -21,6 +21,7 @@ except Exception as e:
 # Local
 try:
    from backend.tools import available_tools
+   from backend.config import load_config
 except Exception as e:
    print(f"[ERROR in backend/graph.py -> Imports] Failed to import local modules:\n{traceback.format_exc() if 'traceback' in globals() else e}")
    raise ImportError(f"Failed to import necessary modules in graph.py: {e}")
@@ -55,8 +56,11 @@ def create_chatbot(model: Any) -> Any:
        The compiled executable graph representing the chatbot.
    """
    try:
+      config = load_config()
+      db_path = config.get('database_path', 'chatbot.db')
+
       # create sqlite connection
-      connect = sqlite3.connect('chatbot.db', check_same_thread=False, timeout=10.0)
+      connect = sqlite3.connect(db_path, check_same_thread=False, timeout=10.0)
       connect.execute('PRAGMA journal_mode=WAL;')
       # create checkpointer for memory using sqlite
       check_pointer = SqliteSaver(conn=connect)
@@ -74,14 +78,17 @@ def create_chatbot(model: Any) -> Any:
          try:
             messages = state['messages']
             
-            # Force Qwen to use tools by injecting a strong system prompt
+            # Force tool usage by injecting system prompt from config
             if not any(msg.type == 'system' for msg in messages):
                from langchain_core.messages import SystemMessage
-               sys_prompt = (
-                  "You are a highly capable AI assistant with access to external tools. "
-                  "You MUST use these tools when asked to perform math, search, or look up information. "
-                  "Do NOT refuse to use tools. Do NOT perform calculations yourself. "
-                  "Always output the correct JSON format to invoke the tool when needed."
+               sys_prompt = config.get(
+                  'system_prompt',
+                  (
+                     "You are a highly capable AI assistant with access to external tools. "
+                     "You MUST use these tools when asked to perform math, search, or look up information. "
+                     "Do NOT refuse to use tools. Do NOT perform calculations yourself. "
+                     "Always output the correct JSON format to invoke the tool when needed."
+                  )
                )
                messages = [SystemMessage(content=sys_prompt)] + messages
 

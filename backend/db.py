@@ -7,6 +7,12 @@ import sqlite3
 import traceback
 import uuid
 
+# Local
+try:
+    from backend.config import load_config
+except Exception:
+    load_config = lambda: {}
+
 # ============================================================
 # Connection Management
 # ============================================================
@@ -21,7 +27,8 @@ def get_db_connection() -> sqlite3.Connection:
         The configured SQLite database connection.
     """
     try:
-        conn = sqlite3.connect('chatbot.db', check_same_thread=False, timeout=10.0)
+        db_path = load_config().get('database_path', 'chatbot.db')
+        conn = sqlite3.connect(db_path, check_same_thread=False, timeout=10.0)
         conn.execute('PRAGMA journal_mode=WAL;')
         conn.execute('''
             CREATE TABLE IF NOT EXISTS threads (

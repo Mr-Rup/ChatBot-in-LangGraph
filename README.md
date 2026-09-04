@@ -103,10 +103,12 @@ ChatBot-in-LangGraph/
 │
 ├── backend/                      # Core agent logic and inference services
 │   ├── __init__.py               # Backend package initialization
-│   ├── bot.py                    # ChatBot orchestrator and default config
+│   ├── bot.py                    # ChatBot orchestrator and instantiation
+│   ├── config.py                 # Configuration loader and interactive CLI selector
 │   ├── db.py                     # SQLite connection and thread operations
 │   ├── graph.py                  # LangGraph state machine, nodes, and edges
 │   ├── model.py                  # Hugging Face local & API model loader
+│   ├── models.json               # Catalog of AI models, specs, and requirements
 │   └── tools.py                  # Extensible tool registry and definitions
 │
 ├── frontend/                     # Presentation and user interface
@@ -114,10 +116,11 @@ ChatBot-in-LangGraph/
 │   ├── state.py                  # Streamlit session state and thread management
 │   └── ui.py                     # Sidebar, dialogs, and chat stream rendering
 │
-├── .env.example                  # Template for environment variables and API keys
+├── .env.example                  # Template for sensitive credentials and API tokens
 ├── .gitignore                    # Git tracking exemptions
 ├── app.py                        # Main Streamlit application entry point
 ├── CodeStructure.md              # Project coding conventions and style guide
+├── config.json                   # General project configurations & settings
 ├── README.md                     # Comprehensive project documentation
 ├── requirements.txt              # Categorized project dependencies (CUDA 12.6)
 └── run.bat                       # Automated Windows launcher and venv manager
@@ -203,38 +206,81 @@ The repository provides a self-healing `run.bat` script that verifies your Pytho
 
 ## Configuration Guide
 
-### Environment Variables (`.env`)
+## Configuration Guide
 
-Create a `.env` file in the root directory if you wish to use remote Hugging Face APIs or LangSmith tracing:
+The project adopts a strict separation between **sensitive credentials**, **application runtime settings**, and **AI model specifications**.
+
+### 1. Sensitive Credentials (`.env`)
+
+The `.env` file is restricted strictly to private tokens and secrets. Copy `.env.example` to `.env`:
 
 ```env
-# Hugging Face API Token (Required if using model_type='api' or gated models)
+# Hugging Face Access Token (Required for API models or gated repos like Llama)
 HUGGINGFACEHUB_API_TOKEN=your_huggingface_api_token_here
 
-# Optional: LangSmith Tracing & Observability
-LANGCHAIN_TRACING_V2=false
+# LangSmith API Key (Required only if langsmith tracing is enabled in config.json)
 LANGCHAIN_API_KEY=your_langsmith_api_key_here
-LANGCHAIN_PROJECT=ChatBot-LangGraph
 ```
 
 ---
 
-### Model Selection & Hyperparameters
+### 2. General Project Settings (`config.json`)
 
-Model specifications are controlled via `DEFAULT_MODEL_CONFIG` in [`backend/bot.py`](file:///s:/ChatBot-in-LangGraph/backend/bot.py):
+All non-sensitive application settings (cache directories, database paths, LangSmith toggles, and system prompts) are controlled centrally in [`config.json`](file:///s:/ChatBot-in-LangGraph/config.json):
 
-```python
-DEFAULT_MODEL_CONFIG = {
-    'model_type': 'local',                     # 'local' or 'api'
-    'model_name': 'Qwen/Qwen2.5-3B-Instruct',  # HuggingFace repository ID
-    'model_task': 'text-generation',           # Pipeline task
-    'model_temperature': 0.1,                  # Determinism vs creativity
-    'model_max_new_tokens': 512                # Max output length per step
+```json
+{
+  "active_model": "qwen-2.5-3b",
+  "llm_cache_dir": "S:/ollama_models",
+  "database_path": "chatbot.db",
+  "langsmith": {
+    "tracing": false,
+    "project": "ChatBot-LangGraph",
+    "endpoint": "https://api.smith.langchain.com"
+  },
+  "system_prompt": "You are a highly capable AI assistant with access to external tools. You MUST use these tools when asked to perform math, search, or look up information. Do NOT refuse to use tools. Do NOT perform calculations yourself. Always output the correct JSON format to invoke the tool when needed."
 }
 ```
 
-- **Local Inference:** Quantized using 4-bit NormalFloat (`BitsAndBytesConfig`) on CUDA devices. Model weights are cached locally (customizable via `HF_HOME` in `backend/model.py`).
-- **Cloud API Inference:** Switch `'model_type': 'api'` to use serverless endpoints without consuming local VRAM.
+---
+
+### 3. Model Catalog & Specifications (`backend/models.json`)
+
+All AI model definitions, hardware specifications, and parameters live cleanly in [`backend/models.json`](file:///s:/ChatBot-in-LangGraph/backend/models.json):
+
+```json
+{
+  "qwen-2.5-3b": {
+    "name": "Qwen 2.5 3B Instruct",
+    "repo_id": "Qwen/Qwen2.5-3B-Instruct",
+    "model_type": "local",
+    "task": "text-generation",
+    "temperature": 0.1,
+    "max_new_tokens": 512,
+    "specs": {
+      "parameters": "3.09B",
+      "vram_required": "~2.0 GB (4-bit quantized)",
+      "ram_required": "8 GB",
+      "tool_support": "High (Native function calling & tool precision)",
+      "recommended_hardware": "NVIDIA GPU with 4GB+ VRAM or modern multi-core CPU"
+    },
+    "description": "Recommended. Outstanding balance of deep reasoning, concise answers, and tool-use reliability."
+  }
+}
+```
+
+#### Pre-Configured Models
+1. **Qwen 2.5 3B Instruct** (`qwen-2.5-3b`): *Default*. Outstanding reasoning and reliable tool-calling precision (~2GB VRAM).
+2. **TinyLlama 1.1B Chat** (`tiny-llama-1.1b`): Ultra-lightweight and fast, runs on virtually any PC/laptop (~1GB VRAM).
+3. **Qwen 2.5 1.5B Instruct** (`qwen-2.5-1.5b`): Great balance of speed and instruction following (~1.2GB VRAM).
+4. **Qwen 2.5 0.5B Instruct** (`qwen-2.5-0.5b`): Ultra-compact, ideal for CPU-only and testing (<1GB VRAM).
+5. **Llama 3.2 1B Instruct** (`llama-3.2-1b`): Edge-optimized multilingual model (Requires HF token in `.env`).
+6. **Phi 3.5 Mini Instruct** (`phi-3.5-mini`): Microsoft's strong mathematical and reasoning model (~2.5GB VRAM).
+
+#### Selecting Models
+- **At Launch (Interactive CLI):** When executing `run.bat`, an interactive menu prompts you to either keep the active model or select a new one from the list.
+- **In Streamlit UI:** The sidebar automatically displays the active model's name, parameter count, hardware requirements, and tool capability.
+- **Manually:** Change the `"active_model"` key directly in `config.json`.
 
 ---
 

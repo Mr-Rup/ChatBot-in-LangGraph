@@ -10,6 +10,7 @@ from typing import Literal
 try:
    from backend.model import create_hf_model
    from backend.graph import create_chatbot
+   from backend.config import get_active_model_config
 except Exception as e:
    print(f"[ERROR in backend/bot.py -> Imports] Failed to import:\n{traceback.format_exc()}")
    raise ImportError(f"Failed to import necessary modules in bot.py: {e}")
@@ -44,23 +45,29 @@ class ChatBot:
       self.bot = create_chatbot(self.model)
 
 # ============================================================
-# Default Configuration & Initialization
+# Dynamic Configuration & ChatBot Initialization
 # ============================================================
 
-DEFAULT_MODEL_CONFIG = {
-   'model_type': 'local',
-   'model_name': 'Qwen/Qwen2.5-3B-Instruct',  # Great performance, fits comfortably in 6GB VRAM
-   'model_task': 'text-generation',
-   'model_temperature': 0.1,
-   'model_max_new_tokens': 512
-}
-
-# Create default chatbot instance
 try:
-   chatbot_app = ChatBot(**DEFAULT_MODEL_CONFIG)
+   active_cfg = get_active_model_config()
+   DEFAULT_MODEL_CONFIG = active_cfg
+   chatbot_app = ChatBot(
+      model_type=active_cfg['model_type'],
+      model_name=active_cfg['model_name'],
+      model_task=active_cfg['model_task'],
+      model_temperature=active_cfg['model_temperature'],
+      model_max_new_tokens=active_cfg['model_max_new_tokens']
+   )
    chatbot = chatbot_app.bot
    base_model = chatbot_app.model
 except Exception as e:
    print(f"[ERROR in backend/bot.py -> ChatBot Initialization] Failed to initialize ChatBot:\n{traceback.format_exc()}")
    chatbot = None
    base_model = None
+   DEFAULT_MODEL_CONFIG = {
+      'model_type': 'local',
+      'model_name': 'Qwen/Qwen2.5-3B-Instruct',
+      'model_task': 'text-generation',
+      'model_temperature': 0.1,
+      'model_max_new_tokens': 512
+   }

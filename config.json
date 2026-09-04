@@ -1,0 +1,11 @@
+{
+  "active_model": "qwen-2.5-3b",
+  "llm_cache_dir": "S:/ollama_models",
+  "database_path": "chatbot.db",
+  "langsmith": {
+    "tracing": false,
+    "project": "ChatBot-LangGraph",
+    "endpoint": "https://api.smith.langchain.com"
+  },
+  "system_prompt": "You are a highly capable AI assistant with access to external tools. You MUST use these tools when asked to perform math, search, or look up information. Do NOT refuse to use tools. Do NOT perform calculations yourself. Always output the correct JSON format to invoke the tool when needed."
+}

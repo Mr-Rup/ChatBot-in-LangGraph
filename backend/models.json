@@ -1,0 +1,98 @@
+{
+  "qwen-2.5-3b": {
+    "name": "Qwen 2.5 3B Instruct",
+    "repo_id": "Qwen/Qwen2.5-3B-Instruct",
+    "model_type": "local",
+    "task": "text-generation",
+    "temperature": 0.1,
+    "max_new_tokens": 512,
+    "specs": {
+      "parameters": "3.09B",
+      "vram_required": "~2.0 GB (4-bit quantized)",
+      "ram_required": "8 GB",
+      "tool_support": "High (Native function calling & tool precision)",
+      "recommended_hardware": "NVIDIA GPU with 4GB+ VRAM or modern multi-core CPU"
+    },
+    "description": "Recommended. Outstanding balance of deep reasoning, concise answers, and tool-use reliability."
+  },
+  "tiny-llama-1.1b": {
+    "name": "TinyLlama 1.1B Chat",
+    "repo_id": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+    "model_type": "local",
+    "task": "text-generation",
+    "temperature": 0.1,
+    "max_new_tokens": 512,
+    "specs": {
+      "parameters": "1.1B",
+      "vram_required": "~1.0 GB (4-bit quantized)",
+      "ram_required": "4 GB - 6 GB",
+      "tool_support": "Moderate (Basic prompting & conversational)",
+      "recommended_hardware": "Low-spec PC / Laptops with 2GB-4GB VRAM or CPU"
+    },
+    "description": "Ultra-lightweight and fast. Runs comfortably on virtually any laptop or low-spec PC."
+  },
+  "qwen-2.5-1.5b": {
+    "name": "Qwen 2.5 1.5B Instruct",
+    "repo_id": "Qwen/Qwen2.5-1.5B-Instruct",
+    "model_type": "local",
+    "task": "text-generation",
+    "temperature": 0.1,
+    "max_new_tokens": 512,
+    "specs": {
+      "parameters": "1.54B",
+      "vram_required": "~1.2 GB (4-bit quantized)",
+      "ram_required": "6 GB",
+      "tool_support": "Good (Strong instruction adherence for its size)",
+      "recommended_hardware": "Budget GPUs or CPU"
+    },
+    "description": "Compact and speedy. Great performance for resource-constrained systems."
+  },
+  "qwen-2.5-0.5b": {
+    "name": "Qwen 2.5 0.5B Instruct",
+    "repo_id": "Qwen/Qwen2.5-0.5B-Instruct",
+    "model_type": "local",
+    "task": "text-generation",
+    "temperature": 0.1,
+    "max_new_tokens": 512,
+    "specs": {
+      "parameters": "0.49B",
+      "vram_required": "<1.0 GB",
+      "ram_required": "4 GB",
+      "tool_support": "Basic",
+      "recommended_hardware": "Any CPU / Entry-level machine"
+    },
+    "description": "Extremely small footprint. Ideal for testing and ultra-fast generation on pure CPU."
+  },
+  "llama-3.2-1b": {
+    "name": "Llama 3.2 1B Instruct",
+    "repo_id": "meta-llama/Llama-3.2-1B-Instruct",
+    "model_type": "local",
+    "task": "text-generation",
+    "temperature": 0.1,
+    "max_new_tokens": 512,
+    "specs": {
+      "parameters": "1.23B",
+      "vram_required": "~1.2 GB (4-bit quantized)",
+      "ram_required": "6 GB",
+      "tool_support": "Good (Requires HuggingFace token in .env)",
+      "recommended_hardware": "Modern PC with CUDA or 8GB RAM CPU"
+    },
+    "description": "Meta's lightweight model optimized for edge devices and multilingual tasks (Requires HF token in .env)."
+  },
+  "phi-3.5-mini": {
+    "name": "Phi 3.5 Mini Instruct",
+    "repo_id": "microsoft/Phi-3.5-mini-instruct",
+    "model_type": "local",
+    "task": "text-generation",
+    "temperature": 0.1,
+    "max_new_tokens": 512,
+    "specs": {
+      "parameters": "3.8B",
+      "vram_required": "~2.5 GB (4-bit quantized)",
+      "ram_required": "8 GB - 16 GB",
+      "tool_support": "High (Strong mathematical and logical reasoning capabilities)",
+      "recommended_hardware": "NVIDIA GPU with 6GB+ VRAM or strong multi-core CPU"
+    },
+    "description": "Microsoft's high-reasoning small language model with 128k context support."
+  }
+}

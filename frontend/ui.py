@@ -74,8 +74,22 @@ def render_sidebar() -> None:
    if st.sidebar.button("New Chat"):
       create_new_chat_dialog()
 
+   st.sidebar.header('Active Model')
+   model_display_name = DEFAULT_MODEL_CONFIG.get('name', DEFAULT_MODEL_CONFIG.get('model_name', 'Unknown'))
+   st.sidebar.caption(f"🤖 **{model_display_name}**")
+   
+   specs = DEFAULT_MODEL_CONFIG.get('specs', {})
+   if specs:
+      with st.sidebar.expander("Model Specifications", expanded=False):
+         st.write(f"**Parameters:** {specs.get('parameters', 'N/A')}")
+         st.write(f"**VRAM Required:** {specs.get('vram_required', 'N/A')}")
+         st.write(f"**RAM Required:** {specs.get('ram_required', 'N/A')}")
+         st.write(f"**Tool Support:** {specs.get('tool_support', 'N/A')}")
+         if DEFAULT_MODEL_CONFIG.get('description'):
+            st.info(DEFAULT_MODEL_CONFIG['description'])
+
    st.sidebar.header('Settings')
-   temperature = st.sidebar.slider("Creativity (Temperature)", min_value=0.01, max_value=1.0, value=DEFAULT_MODEL_CONFIG['model_temperature'], step=0.01, help="Higher values make output more creative. Lower values are better for tool reliability.")
+   temperature = st.sidebar.slider("Creativity (Temperature)", min_value=0.01, max_value=1.0, value=float(DEFAULT_MODEL_CONFIG.get('model_temperature', 0.1)), step=0.01, help="Higher values make output more creative. Lower values are better for tool reliability.")
 
    st.sidebar.header('Conversations')
 

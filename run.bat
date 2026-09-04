@@ -50,6 +50,9 @@ if not exist "%VENV_DIR%\Scripts\activate.bat" (
     pip install -r requirements.txt -q
 )
 
+:: Interactive model selection from config.json & backend/models.json
+python -c "from backend.config import prompt_model_selection; prompt_model_selection()"
+
 echo.
 echo ============================================================
 echo Launching Streamlit Interface...

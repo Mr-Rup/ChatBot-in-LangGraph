@@ -17,9 +17,16 @@ except Exception as e:
 # Load secret keys if any
 load_dotenv()
 
-# Fix local models cache directory if not already specified in environment
-if not os.environ.get('HF_HOME'):
-   os.environ['HF_HOME'] = 'S:/ollama_models'
+# Local
+try:
+   from backend.config import load_config, apply_environment_settings
+except Exception as e:
+   print(f"[ERROR in backend/model.py -> Imports (config)]:\n{traceback.format_exc()}")
+   load_config = lambda: {}
+   apply_environment_settings = lambda: None
+
+# Apply runtime environment variables (HF cache, LangSmith tracing) from config.json
+apply_environment_settings()
 
 # ============================================================
 # Hugging Face Model Creation
