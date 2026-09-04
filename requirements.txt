@@ -5,6 +5,8 @@ langchain-core
 langgraph-checkpoint-sqlite
 langgraph
 langchain-huggingface
+langchain-community
+langsmith
 
 python-dotenv
 huggingface-hub
@@ -14,3 +16,6 @@ bitsandbytes
 
 torch
 torchvision
+
+# Tool specific need
+ddgs # DuckDuckGoSearch

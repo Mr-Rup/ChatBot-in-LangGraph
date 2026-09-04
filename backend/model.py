@@ -1,20 +1,51 @@
+"""
+Hugging Face model initialization and configuration.
+"""
+
+# Standard library
+import os
+import traceback
+from typing import Literal, Any
+
+# Third-party
 try:
-   from typing import Literal
    from dotenv import load_dotenv
-   import os
 except Exception as e:
+   print(f"[ERROR in backend/model.py -> Imports]:\n{traceback.format_exc()}")
    raise ImportError(f"Failed to import necessary modules: {e}")
 
-# import secret keys if any
+# Load secret keys if any
 load_dotenv()
-# fix local models catch directory
+
+# Fix local models cache directory
 os.environ['HF_HOME'] = 'S:/ollama_models'
 
-# -------------------------------------------------------------------
+# ============================================================
 # Hugging Face Model Creation
-# -------------------------------------------------------------------
+# ============================================================
 
-def create_hf_model(type: Literal['api','local'], model_name: str, model_task: str, model_temperature: float, model_max_new_tokens: int):
+def create_hf_model(type: Literal['api','local'], model_name: str, model_task: str, model_temperature: float, model_max_new_tokens: int) -> Any:
+   """
+   Initialize and configure a HuggingFace language model.
+
+   Parameters
+   ----------
+   type : Literal['api', 'local']
+       Whether to use a local or API-based HuggingFace model.
+   model_name : str
+       The HuggingFace repository ID of the model.
+   model_task : str
+       The task type (e.g., 'text-generation').
+   model_temperature : float
+       The creativity parameter for generation.
+   model_max_new_tokens : int
+       The maximum number of tokens to generate.
+
+   Returns
+   -------
+   ChatHuggingFace or None
+       The configured ChatHuggingFace model, or None on failure.
+   """
    try:
       from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint, HuggingFacePipeline
 
@@ -71,4 +102,5 @@ def create_hf_model(type: Literal['api','local'], model_name: str, model_task: s
       return model
 
    except Exception as e:
-      print(f"Error occured while calling creating model instance: {e}")
+      print(f"[ERROR in backend/model.py -> create_hf_model] Failed to initialize model:\n{traceback.format_exc()}")
+      return None

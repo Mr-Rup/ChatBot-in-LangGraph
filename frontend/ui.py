@@ -1,11 +1,32 @@
+"""
+Streamlit user interface components for the ChatBot.
+"""
+
+# Standard library
+import traceback
+
+# Third-party
 import streamlit as st
 import streamlit.components.v1 as components
 from langchain_core.messages import HumanMessage
-from backend.bot import chatbot
-from frontend.state import generate_thread_id, add_thread, load_conversation
+
+# Local
+try:
+   from backend.bot import chatbot, base_model, DEFAULT_MODEL_CONFIG
+   from frontend.state import generate_thread_id, add_thread, load_conversation
+except Exception as e:
+   print(f"[ERROR in frontend/ui.py -> Imports]:\n{traceback.format_exc()}")
+
+# ============================================================
+# Dialogs
+# ============================================================
 
 @st.dialog("Create New Chat")
-def create_new_chat_dialog():
+def create_new_chat_dialog() -> None:
+   """
+   Render a dialog for creating a new chat thread.
+   It sets up a new thread ID and clears the active message history.
+   """
    with st.form(key='new_chat_dialog_form'):
       new_chat_name = st.text_input("Chat Name", value="New chat")
       
@@ -36,7 +57,14 @@ def create_new_chat_dialog():
          st.session_state['msg_history'] = []
          st.rerun()
 
-def render_sidebar():
+# ============================================================
+# Sidebar Interface
+# ============================================================
+
+def render_sidebar() -> None:
+   """
+   Render the left sidebar containing chat history and model settings.
+   """
    # -------------------------------------------------------------------
    # sidebar ui
    # -------------------------------------------------------------------
@@ -45,6 +73,9 @@ def render_sidebar():
 
    if st.sidebar.button("New Chat"):
       create_new_chat_dialog()
+
+   st.sidebar.header('Settings')
+   temperature = st.sidebar.slider("Creativity (Temperature)", min_value=0.01, max_value=1.0, value=DEFAULT_MODEL_CONFIG['model_temperature'], step=0.01, help="Higher values make output more creative. Lower values are better for tool reliability.")
 
    st.sidebar.header('Conversations')
 
@@ -60,13 +91,26 @@ def render_sidebar():
          delete_thread(thread['thread_id'])
          st.rerun()
 
-def render_chat():
+# ============================================================
+# Chat Interface
+# ============================================================
+
+def render_chat() -> None:
+   """
+   Render the main chat interface, displaying conversation history 
+   and processing new user inputs.
+   """
    # -------------------------------------------------------------------
    # loading conversaton history from session_state
    # -------------------------------------------------------------------
    for msg in st.session_state['msg_history']:
-      with st.chat_message(msg['role']):
-         st.markdown(msg['content'])
+      if msg['role'] == 'tool_call':
+         st.info(msg['content'])
+      elif msg['role'] == 'tool_result':
+         st.success(msg['content'])
+      else:
+         with st.chat_message(msg['role']):
+            st.markdown(msg['content'])
 
    # -------------------------------------------------------------------
    # take user queries and get ai response from chatbot in streaming mode
@@ -98,16 +142,46 @@ def render_chat():
       with st.chat_message('ai'):
          if chatbot is None:
             st.error("Chatbot failed to initialize. Please check the backend logs.")
-            ai_msg = "Error: Chatbot not available."
          else:
             with st.spinner('Thinking...'):
-               ai_msg = st.write_stream(
-                  message_chunk.content for message_chunk, metadata in chatbot.stream(
+               # Dynamically update the temperature of the underlying model
+               if base_model:
+                  if DEFAULT_MODEL_CONFIG['model_type'] == 'local':
+                     try:
+                        base_model.llm.pipeline.model.generation_config.temperature = temperature
+                     except Exception as e:
+                        pass
+                  else:
+                     try:
+                        base_model.llm.temperature = temperature
+                     except Exception as e:
+                        pass
+
+               placeholder = st.empty()
+               full_response = ""
+               
+               try:
+                  for msg, metadata in chatbot.stream(
                      {'messages': [HumanMessage(content= user_input)]},
                      config = {'configurable': {'thread_id': st.session_state['thread_id']}},
                      stream_mode = 'messages'
-                  ) if message_chunk.type in ['ai', 'AIMessageChunk']
-               )
+                  ):
+                     if msg.type in ['ai', 'AIMessageChunk']:
+                        if hasattr(msg, 'tool_calls') and msg.tool_calls:
+                           for tool_call in msg.tool_calls:
+                              st.info(f"🛠️ Using tool: {tool_call['name']}...")
+                        if msg.content:
+                           if isinstance(msg.content, str):
+                              full_response += msg.content
+                              placeholder.markdown(full_response + "▌")
+                     elif msg.type == 'tool':
+                        st.success(f"✔️ Tool '{msg.name}' returned: {msg.content}")
 
-      # add the ai message to the message history
-      st.session_state['msg_history'].append({'role': 'ai', 'content': ai_msg})
+                  placeholder.markdown(full_response)
+               except Exception as e:
+                  print(f"[ERROR in frontend/ui.py -> chatbot.stream] LLM Streaming failed:\n{traceback.format_exc()}")
+                  st.error(f"An error occurred while generating the response: {e}")
+                  
+      # Refresh message history directly from LangGraph to get everything (including tools)
+      st.session_state['msg_history'] = load_conversation(st.session_state['thread_id'])
+      st.rerun()
