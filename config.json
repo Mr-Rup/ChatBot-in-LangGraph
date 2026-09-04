@@ -1,5 +1,5 @@
 {
-  "active_model": "qwen-2.5-3b",
+  "active_model": "tiny-llama-1.1b",
   "llm_cache_dir": "S:/ollama_models",
   "database_path": "chatbot.db",
   "langsmith": {
