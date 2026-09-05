@@ -1,11 +1,11 @@
 {
-  "active_model": "tiny-llama-1.1b",
-  "llm_cache_dir": "S:/ollama_models",
+  "active_model": "qwen-2.5-3b",
+  "llm_cache_dir": null,
   "database_path": "chatbot.db",
   "langsmith": {
-    "tracing": false,
-    "project": "ChatBot-LangGraph",
+    "tracing": true,
+    "project": "ChatBot-Test",
     "endpoint": "https://api.smith.langchain.com"
   },
-  "system_prompt": "You are a highly capable AI assistant with access to external tools. You MUST use these tools when asked to perform math, search, or look up information. Do NOT refuse to use tools. Do NOT perform calculations yourself. Always output the correct JSON format to invoke the tool when needed."
+  "system_prompt": "You are a highly capable AI assistant with access to external tools. You MUST use these tools when asked to perform math, search, or look up information. Do NOT refuse to use tools. Do NOT perform calculations yourself. Always output the correct JSON format to invoke the tool when needed. IMPORTANT FORMATTING RULES: 1. Never use LaTeX brackets like \\[ or \\( for math. Always use standard markdown instead. 2. Do not use custom tags or pseudo-code to explain tool usage. Just output the standard tool call format. 3. Provide all text responses in clean, standard Markdown format."
 }

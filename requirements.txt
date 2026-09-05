@@ -9,6 +9,7 @@ streamlit
 # Core AI Logic & Graph Management
 # ==========================================
 langchain-core               # Core LangChain abstractions and messages
+langchain
 langgraph                    # Framework for stateful conversational agents
 langgraph-checkpoint-sqlite  # Persistence for saving LangGraph memory to SQLite DB
 langsmith                    # Tracing and observability for AI agents

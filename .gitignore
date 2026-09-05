@@ -1,11 +1,21 @@
+# Python virtual environments
 .myenv/
+.venv/
+venv/
+env/
+
+# Python bytecode cache
 __pycache__/
 *.pyc
+*.pyo
+
+# Secrets and credentials — NEVER commit
 .env
+
+# macOS metadata
 .DS_Store
 
-chatbot.db
-chatbot.db-shm
-chatbot.db-wal
-
-CodeStructure.md
+# SQLite database files (all WAL-mode variants)
+*.db
+*.db-shm
+*.db-wal

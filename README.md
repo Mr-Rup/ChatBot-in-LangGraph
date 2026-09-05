@@ -37,21 +37,22 @@ An enterprise-ready, stateful conversational AI assistant powered by **LangGraph
 - **Dynamic Tool Calling & Agentic Loop:** Features automated ReAct conditional loops (`tools_condition`) that trigger specialized capabilities when required:
   - **Live Web Search:** Real-time internet search via DuckDuckGo.
   - **Arithmetic Calculator:** Precise numeric computations with error boundary handling.
-  - **Extensible Registry:** Automatic discovery of any decorated `@tool` functions.
+  - **Extensible Registry:** Automatic discovery of any tool files dropped into `backend/tools/`.
 - **Hardware-Optimized Local Inference:**
   - Configured for **`Qwen/Qwen2.5-3B-Instruct`**, balancing quality, reasoning, and resource efficiency.
   - **4-Bit NF4 Quantization** via `bitsandbytes` reducing VRAM requirements to ~2GB.
   - Seamless toggle between local Hugging Face pipelines (`HuggingFacePipeline`) and cloud-hosted inference endpoints (`HuggingFaceEndpoint`).
 - **Interactive Multi-Thread UI:**
-  - Sidebar conversation history with instant creation, selection, and deletion of threads.
-  - Interactive "New Chat" modal dialog with auto-focus form controls.
+  - Sidebar conversation history with instant creation, renaming, selection, and deletion of threads.
+  - Interactive "New Chat" and "Rename" modal dialogs with auto-focus form controls.
   - Live temperature slider for fine-tuning model creativity vs. tool determinism.
 - **Real-Time Token Streaming:**
   - Streaming responses rendered token-by-token using `chatbot.stream(..., stream_mode='messages')`.
   - Visual indicators for active tool calls (`🛠️ Using tool...`) and execution results (`✔️ Tool returned...`).
 - **Production-Grade Fault Tolerance:**
-  - Comprehensive `try/except` boundaries with detailed traceback logging across every module.
-  - SQLite WAL (Write-Ahead Logging) mode and thread timeout safeguards to prevent database deadlocks.
+  - **Centralized Precision Logging:** Every log message shows the exact file, function, and line number.
+  - SQLite WAL (Write-Ahead Logging) mode and exponential backoff retries to prevent database deadlocks.
+  - Lazy factory instantiation for the chatbot model to recover gracefully from misconfigurations.
 
 ---
 
@@ -98,23 +99,28 @@ flowchart TD
 
 ## Project Directory Structure
 
+The project has been modularized into highly focused sub-packages:
+
 ```plaintext
 ChatBot-in-LangGraph/
 │
 ├── backend/                      # Core agent logic and inference services
-│   ├── __init__.py               # Backend package initialization
-│   ├── bot.py                    # ChatBot orchestrator and instantiation
-│   ├── config.py                 # Configuration loader and interactive CLI selector
-│   ├── db.py                     # SQLite connection and thread operations
-│   ├── graph.py                  # LangGraph state machine, nodes, and edges
-│   ├── model.py                  # Hugging Face local & API model loader
-│   ├── models.json               # Catalog of AI models, specs, and requirements
-│   └── tools.py                  # Extensible tool registry and definitions
+│   ├── bot/                      # ChatBot class and lazy cache factory
+│   ├── config/                   # Config loading, validation, and CLI selector
+│   ├── db/                       # SQLite connection and thread operations
+│   ├── graph/                    # LangGraph state machine, nodes, and parser
+│   ├── model/                    # Hugging Face local & API model loader
+│   ├── tools/                    # Auto-discovering tool registry
+│   │   ├── __init__.py           # Discovers tools using pkgutil
+│   │   ├── calculator.py         # Arithmetic calculator tool
+│   │   └── search.py             # DuckDuckGo search tool
+│   ├── constants.py              # Single source of truth for magic strings
+│   ├── logger.py                 # Centralized precise logging setup
+│   └── models.json               # Catalog of AI models, specs, and requirements
 │
 ├── frontend/                     # Presentation and user interface
-│   ├── __init__.py               # Frontend package initialization
-│   ├── state.py                  # Streamlit session state and thread management
-│   └── ui.py                     # Sidebar, dialogs, and chat stream rendering
+│   ├── state/                    # Session state, conversation loaders, thread management
+│   └── ui/                       # Sidebar, dialogs, and chat stream rendering
 │
 ├── .env.example                  # Template for sensitive credentials and API tokens
 ├── .gitignore                    # Git tracking exemptions
@@ -206,8 +212,6 @@ The repository provides a self-healing `run.bat` script that verifies your Pytho
 
 ## Configuration Guide
 
-## Configuration Guide
-
 The project adopts a strict separation between **sensitive credentials**, **application runtime settings**, and **AI model specifications**.
 
 ### 1. Sensitive Credentials (`.env`)
@@ -226,12 +230,12 @@ LANGCHAIN_API_KEY=your_langsmith_api_key_here
 
 ### 2. General Project Settings (`config.json`)
 
-All non-sensitive application settings (cache directories, database paths, LangSmith toggles, and system prompts) are controlled centrally in [`config.json`](file:///s:/ChatBot-in-LangGraph/config.json):
+All non-sensitive application settings (cache directories, database paths, LangSmith toggles, and system prompts) are controlled centrally in `config.json`:
 
 ```json
 {
   "active_model": "qwen-2.5-3b",
-  "llm_cache_dir": "S:/ollama_models",
+  "llm_cache_dir": null,
   "database_path": "chatbot.db",
   "langsmith": {
     "tracing": false,
@@ -246,7 +250,7 @@ All non-sensitive application settings (cache directories, database paths, LangS
 
 ### 3. Model Catalog & Specifications (`backend/models.json`)
 
-All AI model definitions, hardware specifications, and parameters live cleanly in [`backend/models.json`](file:///s:/ChatBot-in-LangGraph/backend/models.json):
+All AI model definitions, hardware specifications, and parameters live cleanly in `backend/models.json`:
 
 ```json
 {
@@ -261,8 +265,7 @@ All AI model definitions, hardware specifications, and parameters live cleanly i
       "parameters": "3.09B",
       "vram_required": "~2.0 GB (4-bit quantized)",
       "ram_required": "8 GB",
-      "tool_support": "High (Native function calling & tool precision)",
-      "recommended_hardware": "NVIDIA GPU with 4GB+ VRAM or modern multi-core CPU"
+      "tool_support": "High (Native function calling & tool precision)"
     },
     "description": "Recommended. Outstanding balance of deep reasoning, concise answers, and tool-use reliability."
   }
@@ -286,36 +289,35 @@ All AI model definitions, hardware specifications, and parameters live cleanly i
 
 ### Adding Custom Tools
 
-Adding new capabilities to the chatbot is fully automated. Simply define a function decorated with `@tool` in [`backend/tools.py`](file:///s:/ChatBot-in-LangGraph/backend/tools.py):
+The project uses a self-registering tool discovery system. Adding new capabilities to the chatbot is fully automated.
+
+1. Create a new file in the `backend/tools/` directory (e.g., `backend/tools/stock_price.py`).
+2. Define your tool using the `@tool` decorator.
+3. Expose a `TOOLS` list at the bottom of the file.
 
 ```python
-from langchain_core.tools import tool
+from langchain_core.tools import tool, BaseTool
 
 @tool
 def get_stock_price(ticker: str) -> dict:
-    """
-    Fetch the latest stock price for a given stock ticker symbol.
-
-    Parameters
-    ----------
-    ticker : str
-        The market ticker symbol (e.g., AAPL, MSFT).
-    """
-    # Custom business logic here...
+    """Fetch the latest stock price for a given stock ticker symbol."""
     return {"ticker": ticker, "price": 182.50}
+
+# The tools/__init__.py auto-discovers this list!
+TOOLS: list[BaseTool] = [get_stock_price]
 ```
 
-The `available_tools()` registry automatically scans and registers all decorated tools to the LangGraph node at startup.
+That's it! The system will automatically find your tool, bind it to the LLM, and execute it when requested. You don't need to change any other file.
 
 ---
 
 ## Database Schema & Memory Management
 
-All session and conversation history is persisted in a local SQLite database (`chatbot.db`) configured with **WAL (Write-Ahead Logging)** mode for concurrent read/write stability.
+All session and conversation history is persisted in a local SQLite database (`chatbot.db`) configured with **WAL (Write-Ahead Logging)** mode and automated backoff retries for concurrent read/write stability.
 
 ### Tables
 
-1. **`threads`** (Managed by [`backend/db.py`](file:///s:/ChatBot-in-LangGraph/backend/db.py)):
+1. **`threads`** (Managed by `backend/db/threads.py`):
    - `thread_id` *(TEXT, PRIMARY KEY)*: Unique thread identifier (e.g., `thread1`, `thread2`).
    - `thread_name` *(TEXT)*: User-defined label displayed in the sidebar.
    - `updated_at` *(TIMESTAMP)*: Tracks the most recently active conversations.
@@ -331,7 +333,7 @@ All session and conversation history is persisted in a local SQLite database (`c
 <details>
 <summary><b>1. CUDA Out of Memory (OOM) error during local model loading</b></summary>
 
-- **Solution:** Verify `bitsandbytes` is installed to ensure 4-bit quantization is active. If your GPU has less than 4GB VRAM, switch `'model_type': 'api'` in [`backend/bot.py`](file:///s:/ChatBot-in-LangGraph/backend/bot.py) or use a smaller base model like `Qwen/Qwen2.5-1.5B-Instruct` or `Qwen/Qwen2.5-0.5B-Instruct`.
+- **Solution:** Verify `bitsandbytes` is installed to ensure 4-bit quantization is active. If your GPU has less than 4GB VRAM, switch `'model_type': 'api'` in `backend/models.json` or use a smaller base model like `Qwen/Qwen2.5-1.5B-Instruct` or `Qwen/Qwen2.5-0.5B-Instruct`.
 </details>
 
 <details>
@@ -346,16 +348,13 @@ All session and conversation history is persisted in a local SQLite database (`c
 <details>
 <summary><b>3. SQLite database is locked (OperationalError)</b></summary>
 
-- **Solution:** WAL mode is enabled by default (`PRAGMA journal_mode=WAL;`) with a 10-second timeout. Ensure no external SQLite browser has locked the file in exclusive mode.
+- **Solution:** WAL mode is enabled and there is automatic backoff-retry logic in place. However, ensure no external SQLite browser has locked the file in exclusive mode.
 </details>
 
 <details>
 <summary><b>4. Changing model download cache directory</b></summary>
 
-- **Solution:** Edit line 21 in [`backend/model.py`](file:///s:/ChatBot-in-LangGraph/backend/model.py):
-  ```python
-  os.environ['HF_HOME'] = 'path/to/your/custom/directory'
-  ```
+- **Solution:** Edit `config.json` and change `"llm_cache_dir": null` to the absolute path of your choice (e.g., `"S:/ollama_models"`). If left `null`, Hugging Face will use its platform default (`~/.cache/huggingface`).
 </details>
 
 ---
@@ -370,7 +369,7 @@ Contributions, issues, and feature requests are welcome!
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-Please adhere to the coding standards described in [CodeStructure.md](file:///s:/ChatBot-in-LangGraph/CodeStructure.md).
+Please adhere to the coding standards described in [CodeStructure.md](CodeStructure.md).
 
 ---
 
