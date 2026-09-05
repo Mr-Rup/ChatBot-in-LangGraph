@@ -95,8 +95,9 @@ def create_chatbot(model: Any) -> Any:
         full_system_prompt = (
             f"{base_prompt}\n\n"
             f"You have access to the following tools:\n{tool_descs}\n\n"
-            "When calling a tool, output ONLY a valid JSON object. No extra text.\n"
-            'Format: {"name": "tool_name", "arguments": {"arg_name": "arg_value"}}\n'
+            "To use a tool, output ONLY a valid JSON object in this format:\n"
+            '{"name": "tool_name", "arguments": {"arg_name": "arg_value"}}\n\n'
+            "Once you receive the tool's result, respond to the user naturally. Do NOT output JSON in your final answer."
         )
 
         # ── Graph node: chat_node ──

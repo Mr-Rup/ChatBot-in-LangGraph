@@ -65,9 +65,17 @@ def parse_tool_call_from_text(
         if block_match:
             json_str = block_match.group(1)
 
-    # ── Strategy 3: Bare JSON as the entire response ──
-    if not json_str and content.startswith("{") and content.endswith("}"):
-        json_str = content
+    # ── Strategy 3: Bare JSON object (may have trailing text) ──
+    if not json_str and content.startswith("{"):
+        for i, char in enumerate(content):
+            if char == "}":
+                try:
+                    # If this substring parses cleanly, it's the full JSON object
+                    json.loads(content[:i+1])
+                    json_str = content[:i+1]
+                    break
+                except json.JSONDecodeError:
+                    continue
 
     if not json_str:
         return None

@@ -1,6 +1,6 @@
 {
   "active_model": "qwen-2.5-3b",
-  "llm_cache_dir": null,
+  "llm_cache_dir": "S:/ollama_models",
   "database_path": "chatbot.db",
   "langsmith": {
     "tracing": true,
